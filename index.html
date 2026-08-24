@@ -6,15 +6,19 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Local-first daily todo list with time-based reminder alerts.">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
 
-  <!-- iOS Safari "Add to Home Screen" support. black-translucent (plus
-       viewport-fit=cover above) makes the status bar fully transparent
-       so the app's own black background shows through behind the notch,
-       instead of Safari's opaque white default status-bar chrome. -->
+  <!-- iOS Safari "Add to Home Screen" support. Deliberately NOT
+       viewport-fit=cover + black-translucent: in standalone (Home
+       Screen) mode that combination lets the layout viewport and the
+       visual viewport drift apart by the safe-area inset, so a touch's
+       browser coordinate and Flutter's hit-test coordinate disagree —
+       taps silently miss their target. "black" pushes content below an
+       opaque (still dark, still looks right) status bar instead, which
+       doesn't have this failure mode. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Todos">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -22,8 +26,58 @@
 
   <title>Todo Reminders</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Second layer of defense against the same viewport-drift failure
+       mode: never let the browser window itself scroll. iOS scrolling
+       the window (e.g. to reveal a focused text field) is exactly the
+       condition that lets touch coordinates and Flutter's hit-test
+       coordinates diverge in standalone mode. Flutter/CanvasKit does
+       its own internal scrolling for on-screen content. */
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overscroll-behavior: none;
+    }
+  </style>
 </head>
 <body>
+  <script>
+    window.addEventListener('scroll', function () {
+      if ((window.scrollY || 0) !== 0 || (window.scrollX || 0) !== 0) {
+        window.scrollTo(0, 0);
+      }
+    }, { passive: true });
+
+    window.addEventListener('focusin', function () {
+      // iOS scrolls to reveal a focused field asynchronously, after the
+      // keyboard animates in — a same-tick reset isn't enough.
+      setTimeout(function () { window.scrollTo(0, 0); }, 300);
+    }, { passive: true });
+
+    // Actively check for a new service worker instead of waiting on the
+    // browser's own update heuristics, and reload once (per session)
+    // when a new one takes control — an installed Home Screen PWA can
+    // otherwise keep serving a stale build for a long time.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.update(); });
+      });
+
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!navigator.serviceWorker.controller) return; // first registration, not an update
+        if (sessionStorage.getItem('sw-reloaded') === '1') return; // once per session only
+        sessionStorage.setItem('sw-reloaded', '1');
+        window.location.reload();
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
