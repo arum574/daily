@@ -6,10 +6,15 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Local-first daily todo list with time-based reminder alerts.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
 
-  <!-- iOS Safari "Add to Home Screen" support -->
+  <!-- iOS Safari "Add to Home Screen" support. black-translucent (plus
+       viewport-fit=cover above) makes the status bar fully transparent
+       so the app's own black background shows through behind the notch,
+       instead of Safari's opaque white default status-bar chrome. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Todos">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
